@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
@@ -15,7 +16,7 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private Animator _animator; // Animator để thay đổi trigger animation
     private bool _isGrounded = true; // Kiểm tra trạng thái trên mặt đất
     private bool _canDoubleJump = false; // Kiểm tra xem có thể thực hiện double jump không
-
+    private Collider _collider;
     private Vector2 _startTouchPosition;
     private Vector2 _endTouchPosition;
 
@@ -23,18 +24,23 @@ public class PlayerMove : MonoBehaviour
     {
         _rb = GetComponent<Rigidbody>();
         _animator = GetComponent<Animator>();
+        _collider = GetComponent<Collider>();
     }
 
     private void Update()
     {
         // Di chuyển liên tục về phía trước
-        transform.Translate(Vector3.forward * moveSpeed * Time.deltaTime);
+     
         _animator.SetBool("isGround", _isGrounded);
+        
 
         // Xử lý thao tác vuốt
         HandleSwipe();
     }
-
+    private void FixedUpdate()
+    {
+        transform.Translate(Vector3.forward * moveSpeed * Time.fixedDeltaTime);
+    }
     private void HandleSwipe()
     {
         if (Input.touchCount > 0)
@@ -85,6 +91,56 @@ public class PlayerMove : MonoBehaviour
         }
     }
 
+    public void activeCollider()
+    {
+         _collider.enabled = true;
+    }
+    public void unActiveCollider()
+    {
+        _collider.enabled = false;
+    }
+    public void horRotateCollider()
+    {
+        if (_collider != null && _collider is CapsuleCollider capsule)
+        {
+            capsule.direction = 2; // 1 là trục Z
+            Vector3 center = capsule.center;
+            center.y = 0.012f; // Gán giá trị mới
+            capsule.center = center;
+            Debug.Log("CapsuleCollider direction set to Y-axis.");
+        }
+        else
+        {
+            Debug.LogWarning("Collider is either null or not a CapsuleCollider.");
+        }
+    }
+    public void verRotateCollider()
+    {
+        if (_collider != null && _collider is CapsuleCollider capsule)
+        {
+            capsule.direction = 1; // 1 là trục Y
+            Debug.Log("CapsuleCollider direction set to Y-axis.");
+            Vector3 center = capsule.center;
+            center.y = 0.03f; // Gán giá trị mới
+            capsule.center = center;
+        }
+        else
+        {
+            Debug.LogWarning("Collider is either null or not a CapsuleCollider.");
+        }
+    }
+    public void XRotateCollider()
+    {
+        if (_collider != null && _collider is CapsuleCollider capsule)
+        {
+            capsule.direction = 0; // 0 là trục X
+            Debug.Log("CapsuleCollider direction set to X-axis.");
+        }
+       
+    }
+
+
+
     private void HighJump()
     {
         if (_isGrounded)
@@ -116,6 +172,7 @@ public class PlayerMove : MonoBehaviour
             _rb.AddForce(new Vector3(0, 1, 1) * jumpForceFlip, ForceMode.Impulse);
             _animator.SetTrigger("santo"); // Chuyển sang animation Santo
             _isGrounded = false;
+   /*         XRotateCollider();*/
         }
     }
 
@@ -126,6 +183,7 @@ public class PlayerMove : MonoBehaviour
             _rb.AddForce(new Vector3(0, 1, 1) * jumpForceWall, ForceMode.Impulse);
             _animator.SetTrigger("overWall"); // Chuyển sang animation vượt tường
             _isGrounded = false;
+         
         }
     }
 
@@ -143,4 +201,5 @@ public class PlayerMove : MonoBehaviour
             _canDoubleJump = false; // Reset khả năng double jump khi chạm đất
         }
     }
+   
 }
