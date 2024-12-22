@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ public class PlayerMove : MonoBehaviour
     public float jumpForceFlip = 8f; // Lực nhảy lật khi double jump
     public float jumpForceWall = 10f; // Lực nhảy vượt tường khi vuốt từ phải sang trái
     public float dashSpeed = 20f; // Lực dash khi vuốt trái hoặc phải
-
+    public ThirdPCamera thirdP;
     private Rigidbody _rb;
     [SerializeField] private Animator _animator; // Animator để thay đổi trigger animation
     private bool _isGrounded = true; // Kiểm tra trạng thái trên mặt đất
@@ -20,26 +21,38 @@ public class PlayerMove : MonoBehaviour
     private Vector2 _startTouchPosition;
     private Vector2 _endTouchPosition;
 
-    private void Start()
+    private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _animator = GetComponent<Animator>();
         _collider = GetComponent<Collider>();
     }
+    private void Start()
+    {
+        
+        if(thirdP.isTransitioning)
+        {
+            _animator.SetTrigger("idle");
+        }
+    }
 
     private void Update()
     {
         // Di chuyển liên tục về phía trước
-     
+
         _animator.SetBool("isGround", _isGrounded);
         
-
+        _animator.SetBool("idle",thirdP.HasIntro);
         // Xử lý thao tác vuốt
         HandleSwipe();
     }
     private void FixedUpdate()
     {
+       
         transform.Translate(Vector3.forward * moveSpeed * Time.fixedDeltaTime);
+   
+
+        
     }
     private void HandleSwipe()
     {
