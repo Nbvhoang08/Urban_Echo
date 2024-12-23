@@ -162,8 +162,6 @@ public class PlayerMove : MonoBehaviour
        
     }
 
-
-
     private void HighJump()
     {
         if (_isGrounded)
@@ -212,7 +210,6 @@ public class PlayerMove : MonoBehaviour
 
         }
     }
-
 
     public void GameOver()
     {
@@ -279,7 +276,7 @@ public class PlayerMove : MonoBehaviour
             {
                 // Nếu Obstacle ở ngang hoặc dưới, Player bị knockback
                 Vector3 knockbackDirection = (playerPosition - contactPoint).normalized; // Hướng knockback
-                _rb.AddForce(knockbackDirection * 5f + Vector3.up * 2f, ForceMode.Impulse); // Knockback + chút lực nhảy lên
+                _rb.AddForce(knockbackDirection * 8f + Vector3.back * 2f, ForceMode.Impulse); // Knockback + chút lực nhảy lên
                 _animator.SetTrigger("stun"); // Chuyển sang animation stun
                 SpawnStunEffect();
                 GameOver();
@@ -302,10 +299,10 @@ public class PlayerMove : MonoBehaviour
         if (_currentStunEffect != null) return;
         Debug.Log("stun");
         // Xác định vị trí spawn hiệu ứng stun (trên đầu Player)
-        Vector3 stunPosition = transform.position + Vector3.up * (_collider.bounds.extents.y + 0.1f);
+        Vector3 stunPosition = transform.position + new Vector3(0,1,1*(_collider.bounds.extents.z -1f)) ;
 
         // Spawn hiệu ứng stun
-        _currentStunEffect = Instantiate(stunEffectPrefab, stunPosition, Quaternion.identity);
+        _currentStunEffect = Instantiate(stunEffectPrefab, stunPosition, Quaternion.Euler(90, 0, 0));
         
         // Gắn hiệu ứng vào Player để nó di chuyển theo
         _currentStunEffect.transform.SetParent(transform);

@@ -40,6 +40,7 @@ public class ThirdPCamera : MonoBehaviour
                 Vector3 desiredPosition = target.position + offset;
                 Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
                 transform.position = smoothedPosition;
+                Camera.main.transform.LookAt(target);
             }
         }
         else
@@ -74,6 +75,7 @@ public class ThirdPCamera : MonoBehaviour
             transform.position = Vector3.Lerp(startPosition, endPosition, elapsedTime / duration);
 
             elapsedTime += Time.deltaTime;
+            Camera.main.transform.LookAt(target);
             yield return null; // Đợi frame tiếp theo
         }
 

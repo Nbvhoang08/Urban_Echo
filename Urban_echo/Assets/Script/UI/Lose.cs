@@ -6,8 +6,10 @@ public class Lose : CanvasUI
 {
     public Text currentLV;
     public Text yourCoins;
+    public Text Error;
     private void OnEnable()
     {
+        Error.text = " ";
         int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
         currentLV.text = nextSceneIndex.ToString();
         yourCoins.text = CoinManager.Instance.GetCoins().ToString();
@@ -24,6 +26,7 @@ public class Lose : CanvasUI
     {
         if(CoinManager.Instance.GetCoins() > 100)
         {
+            Error.text = " ";
             // Lấy scene hiện tại
             Time.timeScale = 1;
             int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
@@ -31,10 +34,17 @@ public class Lose : CanvasUI
             UIManager.Instance.CloseUI<Lose>(0.3f);
             SceneManager.LoadScene(currentSceneIndex);
             CoinManager.Instance.RemoveCoins(100);
+            if(currentSceneIndex ==0)
+            {
+                UIManager.Instance.CloseUI<Lose>(0.3f);
+                UIManager.Instance.CloseUI<GamePlayCanvas>(0.2f);
+                UIManager.Instance.OpenUI<StartCanvas>();
+            }
             
         }
         else
         {
+            Error.text = "you not enough coins";
             return;
         }
        
