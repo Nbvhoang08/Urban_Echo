@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class ThirdPCamera : MonoBehaviour
-{    public Transform target; // Nhân vật hoặc đối tượng cần theo dõi
+{    
+    public Transform target; // Nhân vật hoặc đối tượng cần theo dõi
     public float smoothSpeed = 0.125f;
     public Vector3 offset;
     public bool HasIntro;
     public bool isTransitioning = false; // Để kiểm soát trạng thái chuyển góc quay
     private Quaternion initialRotation;
     private Quaternion targetRotation;
-
+    [SerializeField] private GameManager gameManager;
+    public PlayerMove player;
     private void Start()
     {
         // Đặt góc nhìn ban đầu của camera (quay về phía trước của player)
@@ -30,13 +32,21 @@ public class ThirdPCamera : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!isTransitioning)
+        if (!gameManager.goalReached && !player.Die)
         {
-            // Camera di chuyển theo target khi không còn trong trạng thái chuyển góc quay
-            Vector3 desiredPosition = target.position + offset;
-            Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
-            transform.position = smoothedPosition;
+            if (!isTransitioning)
+            {
+                // Camera di chuyển theo target khi không còn trong trạng thái chuyển góc quay
+                Vector3 desiredPosition = target.position + offset;
+                Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
+                transform.position = smoothedPosition;
+            }
         }
+        else
+        {
+            Camera.main.transform.LookAt(target);
+        }
+       
     }
 
     public void StartTransition()

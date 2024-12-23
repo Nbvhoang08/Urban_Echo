@@ -17,15 +17,22 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private Animator _animator; // Animator để thay đổi trigger animation
     private bool _isGrounded = true; // Kiểm tra trạng thái trên mặt đất
     private bool _canDoubleJump = false; // Kiểm tra xem có thể thực hiện double jump không
+    public GameObject stunEffectPrefab; // Tham chiếu đến prefab hiệu ứng stun
+    private GameObject _currentStunEffect; // Lưu hiệu ứng stun hiện tại
     private Collider _collider;
     private Vector2 _startTouchPosition;
     private Vector2 _endTouchPosition;
+    public bool stun;
+    public bool isJumping;
+    public bool Die;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _animator = GetComponent<Animator>();
         _collider = GetComponent<Collider>();
+        stun = false;
+        Die = false;
     }
     private void Start()
     {
@@ -33,26 +40,39 @@ public class PlayerMove : MonoBehaviour
         if(thirdP.isTransitioning)
         {
             _animator.SetTrigger("idle");
+            moveSpeed = 0;
         }
     }
 
     private void Update()
     {
+        if (Die) return;
         // Di chuyển liên tục về phía trước
-
         _animator.SetBool("isGround", _isGrounded);
         
         _animator.SetBool("idle",thirdP.HasIntro);
+        if (!thirdP.HasIntro && thirdP.isTransitioning)
+        {
+            moveSpeed = 2;
+        }
+        else if (!thirdP.HasIntro && !thirdP.isTransitioning && !stun && !isJumping)
+        {
+            moveSpeed = 5;
+        }
         // Xử lý thao tác vuốt
         HandleSwipe();
+        if (transform.position.y <= -2)
+        {
+            Die = true;
+            StartCoroutine(DelayOpenUI());
+            _animator.SetTrigger("die");
+        }
     }
     private void FixedUpdate()
     {
-       
-        transform.Translate(Vector3.forward * moveSpeed * Time.fixedDeltaTime);
-   
+        if (Die) return;
 
-        
+        transform.Translate(Vector3.forward * moveSpeed * Time.fixedDeltaTime);
     }
     private void HandleSwipe()
     {
@@ -120,34 +140,24 @@ public class PlayerMove : MonoBehaviour
             Vector3 center = capsule.center;
             center.y = 0.012f; // Gán giá trị mới
             capsule.center = center;
-            Debug.Log("CapsuleCollider direction set to Y-axis.");
-        }
-        else
-        {
-            Debug.LogWarning("Collider is either null or not a CapsuleCollider.");
-        }
+        }   
     }
     public void verRotateCollider()
     {
         if (_collider != null && _collider is CapsuleCollider capsule)
         {
             capsule.direction = 1; // 1 là trục Y
-            Debug.Log("CapsuleCollider direction set to Y-axis.");
             Vector3 center = capsule.center;
             center.y = 0.03f; // Gán giá trị mới
             capsule.center = center;
         }
-        else
-        {
-            Debug.LogWarning("Collider is either null or not a CapsuleCollider.");
-        }
+       
     }
     public void XRotateCollider()
     {
         if (_collider != null && _collider is CapsuleCollider capsule)
         {
             capsule.direction = 0; // 0 là trục X
-            Debug.Log("CapsuleCollider direction set to X-axis.");
         }
        
     }
@@ -160,22 +170,24 @@ public class PlayerMove : MonoBehaviour
         {
             _isGrounded = false;
             _canDoubleJump = true; // Sau lần nhảy đầu tiên, cho phép double jump
-           
+            moveSpeed = 0;
             _animator.SetTrigger("jump"); // Chuyển sang animation nhảy cao
+            isJumping = true;
         }
         
     }
     private void Jump()
     {
-        _rb.AddForce(new Vector3(0, 1, 1) * jumpForceHigh, ForceMode.Impulse);
-
+        _rb.AddForce(new Vector3(0, 1.2f, 0.6f) * jumpForceHigh, ForceMode.Impulse);
     }
     private void DoubleJump()
     {
         _canDoubleJump = false; // Không thể double jump thêm lần nữa
         _rb.velocity = new Vector3(_rb.velocity.x, 0, _rb.velocity.z); // Reset vận tốc Y để lần nhảy thứ 2 mượt hơn
-        _rb.AddForce(new Vector3(0, 1, 1) * jumpForceFlip, ForceMode.Impulse);
+        _rb.AddForce(new Vector3(0, 1.2f, 1) * jumpForceFlip, ForceMode.Impulse);
         _animator.SetTrigger("santo"); // Chuyển sang animation Santo
+        moveSpeed = 0;
+        isJumping = true;
     }
 
     private void FlipJump()
@@ -185,7 +197,6 @@ public class PlayerMove : MonoBehaviour
             _rb.AddForce(new Vector3(0, 1, 1) * jumpForceFlip, ForceMode.Impulse);
             _animator.SetTrigger("santo"); // Chuyển sang animation Santo
             _isGrounded = false;
-   /*         XRotateCollider();*/
         }
     }
 
@@ -193,11 +204,25 @@ public class PlayerMove : MonoBehaviour
     {
         if (_isGrounded)
         {
-            _rb.AddForce(new Vector3(0, 1, 1) * jumpForceWall, ForceMode.Impulse);
+            _rb.AddForce(new Vector3(0, 1.6f, 1) * jumpForceWall, ForceMode.Impulse);
             _animator.SetTrigger("overWall"); // Chuyển sang animation vượt tường
             _isGrounded = false;
-         
+            isJumping = true;
+            moveSpeed = 0;
+
         }
+    }
+
+
+    public void GameOver()
+    {
+        StartCoroutine(DelayOpenUI());
+    }
+    IEnumerator DelayOpenUI()
+    {
+        yield return new WaitForSeconds(3);
+        UIManager.Instance.OpenUI<Lose>();
+        Time.timeScale = 0;
     }
 
     private void Dash()
@@ -212,7 +237,80 @@ public class PlayerMove : MonoBehaviour
         {
             _isGrounded = true;
             _canDoubleJump = false; // Reset khả năng double jump khi chạm đất
+            isJumping = false;
+
+        }
+
+        // Nếu va chạm với Obstacle
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            Vector3 contactPoint = collision.contacts[0].point; // Lấy vị trí va chạm
+            Vector3 playerPosition = transform.position;
+
+            moveSpeed = 0;
+            stun = true;
+            Debug.Log(moveSpeed);
+
+            // Xác định vị trí Player so với Obstacle
+            bool isPlayerAboveObstacle = playerPosition.y > contactPoint.y -0.1f; // Kiểm tra nếu Player ở trên Obstacle (thêm 0.1f để tránh va chạm nhỏ)
+            Debug.Log(playerPosition.y + " " + contactPoint.y);
+            if (isPlayerAboveObstacle)
+            {
+                Debug.Log("Player ở trên Obstacle, không bị stun.");
+                moveSpeed = 5;
+                stun = false;
+                _isGrounded = true;
+                isJumping = false;
+                return; // Không làm gì nếu Player ở trên Obstacle
+            }
+
+            // Xác định vị trí Obstacle so với Player
+            bool isAbovePlayer = contactPoint.y > playerPosition.y + _collider.bounds.extents.y; // Obstacle ở trên Player
+
+            if (isAbovePlayer)
+            {
+                // Nếu Obstacle ở trên, Player sẽ bị rơi xuống đất
+                _rb.velocity = new Vector3(0, -jumpForceHigh, 0); // Tạo vận tốc rơi xuống
+                _animator.SetTrigger("stun"); // Chuyển sang animation stun
+                SpawnStunEffect();
+                GameOver();
+            }
+            else
+            {
+                // Nếu Obstacle ở ngang hoặc dưới, Player bị knockback
+                Vector3 knockbackDirection = (playerPosition - contactPoint).normalized; // Hướng knockback
+                _rb.AddForce(knockbackDirection * 5f + Vector3.up * 2f, ForceMode.Impulse); // Knockback + chút lực nhảy lên
+                _animator.SetTrigger("stun"); // Chuyển sang animation stun
+                SpawnStunEffect();
+                GameOver();
+            }
         }
     }
-   
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Coin"))
+        {
+            CoinManager.Instance.AddCoins(10);
+            Destroy(other.gameObject);
+            
+        }
+    }
+    private void SpawnStunEffect()
+    {
+        // Nếu đã có hiệu ứng stun, không tạo thêm
+        if (_currentStunEffect != null) return;
+        Debug.Log("stun");
+        // Xác định vị trí spawn hiệu ứng stun (trên đầu Player)
+        Vector3 stunPosition = transform.position + Vector3.up * (_collider.bounds.extents.y + 0.1f);
+
+        // Spawn hiệu ứng stun
+        _currentStunEffect = Instantiate(stunEffectPrefab, stunPosition, Quaternion.identity);
+        
+        // Gắn hiệu ứng vào Player để nó di chuyển theo
+        _currentStunEffect.transform.SetParent(transform);
+
+        // Tự động hủy hiệu ứng stun sau một khoảng thời gian (nếu cần)
+        Destroy(_currentStunEffect, 5f);
+    }
 }
