@@ -24,7 +24,8 @@ public class Lose : CanvasUI
 
     public void ReloadCurrentScene()
     {
-        if(CoinManager.Instance.GetCoins() > 100)
+        SoundManager.Instance.PlayClickSound();
+        if (CoinManager.Instance.GetCoins() > 100)
         {
             Error.text = " ";
             // Lấy scene hiện tại
@@ -55,6 +56,7 @@ public class Lose : CanvasUI
     /// </summary>
     public void LoadScene1()
     {
+        SoundManager.Instance.PlayClickSound();
         Time.timeScale = 1;
         SceneManager.LoadScene(0); // Load scene có index 1
         UIManager.Instance.CloseUI<Lose>(0.3f);

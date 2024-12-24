@@ -24,6 +24,7 @@ public class StartCanvas : CanvasUI
     }
     public void TapToPlay()
     {
+        SoundManager.Instance.PlayClickSound();
         cam.StartTransition();
         StartCoroutine(ReadytoStart());
     }

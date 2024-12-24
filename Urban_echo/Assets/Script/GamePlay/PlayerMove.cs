@@ -1,7 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
@@ -61,7 +58,7 @@ public class PlayerMove : MonoBehaviour
         }
         // Xử lý thao tác vuốt
         HandleSwipe();
-        if (transform.position.y <= -2)
+        if (transform.position.y <= -4)
         {
             Die = true;
             StartCoroutine(DelayOpenUI());
@@ -224,6 +221,8 @@ public class PlayerMove : MonoBehaviour
 
     private void Dash()
     {
+        if (isJumping) return;
+        if (stun) return;
         _rb.AddForce(Vector3.forward * dashSpeed, ForceMode.Impulse);
         _animator.SetTrigger("dash"); // Chuyển sang animation Dash
     }
@@ -246,14 +245,13 @@ public class PlayerMove : MonoBehaviour
 
             moveSpeed = 0;
             stun = true;
-            Debug.Log(moveSpeed);
+    
 
             // Xác định vị trí Player so với Obstacle
             bool isPlayerAboveObstacle = playerPosition.y > contactPoint.y -0.1f; // Kiểm tra nếu Player ở trên Obstacle (thêm 0.1f để tránh va chạm nhỏ)
-            Debug.Log(playerPosition.y + " " + contactPoint.y);
             if (isPlayerAboveObstacle)
             {
-                Debug.Log("Player ở trên Obstacle, không bị stun.");
+         
                 moveSpeed = 5;
                 stun = false;
                 _isGrounded = true;
@@ -269,6 +267,7 @@ public class PlayerMove : MonoBehaviour
                 // Nếu Obstacle ở trên, Player sẽ bị rơi xuống đất
                 _rb.velocity = new Vector3(0, -jumpForceHigh, 0); // Tạo vận tốc rơi xuống
                 _animator.SetTrigger("stun"); // Chuyển sang animation stun
+                SoundManager.Instance.PlayVFXSound(1);
                 SpawnStunEffect();
                 GameOver();
             }
@@ -278,6 +277,7 @@ public class PlayerMove : MonoBehaviour
                 Vector3 knockbackDirection = (playerPosition - contactPoint).normalized; // Hướng knockback
                 _rb.AddForce(knockbackDirection * 8f + Vector3.back * 2f, ForceMode.Impulse); // Knockback + chút lực nhảy lên
                 _animator.SetTrigger("stun"); // Chuyển sang animation stun
+                SoundManager.Instance.PlayVFXSound(1);
                 SpawnStunEffect();
                 GameOver();
             }
@@ -290,14 +290,14 @@ public class PlayerMove : MonoBehaviour
         {
             CoinManager.Instance.AddCoins(10);
             Destroy(other.gameObject);
-            
+            SoundManager.Instance.PlayVFXSound(0);
+
         }
     }
     private void SpawnStunEffect()
     {
         // Nếu đã có hiệu ứng stun, không tạo thêm
         if (_currentStunEffect != null) return;
-        Debug.Log("stun");
         // Xác định vị trí spawn hiệu ứng stun (trên đầu Player)
         Vector3 stunPosition = transform.position + new Vector3(0,1,1*(_collider.bounds.extents.z -1f)) ;
 

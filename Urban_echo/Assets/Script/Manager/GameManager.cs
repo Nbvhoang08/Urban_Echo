@@ -53,6 +53,7 @@ public class GameManager : MonoBehaviour
 
     private void CelebrateAndChangeScene()
     {
+        SoundManager.Instance.PlayVFXSound(3);
         // Tạo hiệu ứng ăn mừng
         for (int i = 0; i < 5; i++)
         {
@@ -78,8 +79,13 @@ public class GameManager : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
 
-        // Chuyển sang scene tiếp theo
         int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
+        if (nextSceneIndex >= SceneManager.sceneCountInBuildSettings)
+        {
+            nextSceneIndex = 0; // Nếu không có scene kế tiếp, load scene đầu tiên
+            UIManager.Instance.CloseUI<GamePlayCanvas>(0.2f);
+            UIManager.Instance.OpenUI<StartCanvas>();
+        }
         SceneManager.LoadScene(nextSceneIndex);
     }
 
